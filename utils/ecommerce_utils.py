@@ -31,9 +31,11 @@ def extract(input_path):
         if m:
             dictionary_list.append(m.groupdict())
         else:
-            # TODO: Try-except block here to prevent crashes
-            previous_entry = dictionary_list[-1]
-            previous_entry["description"] += " " + line
+            if dictionary_list:
+                previous_entry = dictionary_list[-1]
+                previous_entry["description"] += " " + line
+            else:
+                return pd.DataFrame()
 
     invoice_df = pd.DataFrame.from_records(dictionary_list)
 
@@ -84,11 +86,33 @@ def load(df):
 def calculate_costs(df):
     week_no = df["week"].iloc[0]
     despatch_df = df[df["category"] == "Despatch"]
+    # Use pre-VAT cost
     total_costs = despatch_df["net_cost"].sum()
     total_orders = despatch_df["quantity"].sum()
     cost_per_despatch = round(total_costs / total_orders, 2)
     fixed_cost = 2.44 # Hard coded fixed cost 
     return (int(week_no), float(cost_per_despatch), fixed_cost, int(total_orders))
+
+
+def generate_summary(df):
+    week, actual, fixed, total_orders = calculate_costs(df)
+    str_description = "UNDER"
+
+    if actual > fixed:
+        str_description = "OVER"
+
+    summary_string = f"""Evri E-commerce Despatch
+Week: {str(week)}
+
+The actual cost is {str_description} the fixed rate.
+
+Fixed rate: £{fixed} per despatch
+Actual cost: £{actual} per despatch
+Difference: £{actual - fixed:+.2f} ({100*(actual/fixed - 1):+.2f}%)
+Total despatches: {total_orders:,}
+"""
+    return summary_string
+
 
 # Helper functions
 

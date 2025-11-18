@@ -1,4 +1,5 @@
 import utils.ecommerce_utils as ecom
+import utils.retail_utils as retail
 import os
 import csv
 import tkinter as tk
@@ -22,40 +23,65 @@ if not os.path.isfile("outputs/evri_log.csv"):
 def select_evri_invoice():
     global df_memory
     global invoice_type
-    try:
-        file_path = filedialog.askopenfilename()
-        if not file_path:
-            return
+    file_path = filedialog.askopenfilename()
+    if not file_path:
+        return
 
-        invoice_type = "evri"
-        df_memory = ecom.extract(file_path)
-        df_memory = ecom.transform(df_memory)
-        file_name = os.path.basename(file_path)
-        status_label["text"] = f"{file_name} parsed successfully!"
+    invoice_type = "evri"
 
-        export_invoice_button.pack(pady=5)
-        export_summary_button.pack(pady=5)
-        summarize_invoice_button.pack(pady=5)
-        summary_output.pack(pady=5)
-        summary_output.delete("1.0", tk.END)
-
-    except Exception as e:
-        file_name = os.path.basename(file_path)
-        messagebox.showerror("Error", f"{file_name} is unreadable as an Evri invoice")
+    file_name = os.path.basename(file_path)
+    df_memory = ecom.extract(file_path)
+    
+    if len(df_memory) == 0:
+        messagebox.showerror("Error", f"{file_name} is unreadable as an Evri invoice!")
         root.destroy()
+
+    else:
+        df_memory = ecom.transform(df_memory)
+        status_label["text"] = f"{file_name} parsed successfully!"
+        invoice_loaded_successfully()
 
 
 def select_fedex_invoice():
-    pass
+    global df_memory
+    global invoice_type
+    file_path = filedialog.askopenfilename()
+    if not file_path:
+        return
+
+    invoice_type = "fedex"
+
+    file_name = os.path.basename(file_path)
+    df_memory = retail.extract(file_path)
+
+    if len(df_memory) == 0:
+        messagebox.showerror("Error", f"{file_name} is unreadable as a Fedex invoice!")
+        root.destroy()
+
+    else:
+        df_memory = retail.transform(df_memory)
+        status_label["text"] = f"{file_name} parsed successfully!"
+        invoice_loaded_successfully()
+
+
+def invoice_loaded_successfully():
+    export_invoice_button.pack(pady=5)
+    export_summary_button.pack(pady=5)
+    summarize_invoice_button.pack(pady=5)
+    summary_output.pack(pady=5)
+    summary_output.delete("1.0", tk.END)
 
 
 def export_invoice():
     if df_memory is None:
         return
-    elif invoice_type == "evri":
+
+    if invoice_type == "evri":
         ecom.load(df_memory)
         messagebox.showinfo("Saved", "CSV exported successfully!")
 
+    elif invoice_type == "fedex":
+        pass
 
 def log_summary():
     if df_memory is None:
@@ -87,23 +113,14 @@ def log_summary():
 
 def summarize_invoice_button():
     if df_memory is None:
+        return  
+    if invoice_type == "evri":
+        summary_string = ecom.generate_summary(df_memory)
+
+    elif invoice_type == "fedex":
+        summary_string = retail.generate_summary(df_memory)
+    else:
         return
-    elif invoice_type == "evri":
-        week, actual, fixed, total_orders = ecom.calculate_costs(df_memory)
-        str_description = "UNDER"
-        if actual > fixed:
-            str_description = "OVER"
-
-        summary_string = f"""Evri E-commerce Despatch
-Week: {str(week)}
-
-The actual cost is {str_description} the fixed rate.
-
-Fixed rate: £{fixed} per despatch
-Actual cost: £{actual} per despatch
-Difference: £{actual - fixed:+.2f} ({100*(actual/fixed - 1):+.2f}%)
-Total despatches: {total_orders:,}
-"""
 
     summary_output.delete("1.0", tk.END)
     summary_output.insert(tk.END, summary_string)

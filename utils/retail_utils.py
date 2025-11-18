@@ -9,7 +9,7 @@ def extract(input_path):
 
     with pdfplumber.open(input_path) as pdf:
         for index, page in enumerate(pdf.pages):
-            table_region = table_region = (30, 0, 563, 785)
+            table_region = (30, 0, 563, 785)
 
             if index == 0:
                 table_region = (30, 297, 563, 785)
@@ -27,7 +27,7 @@ def extract(input_path):
         (?P<pieces>\d+)\s+                           # Pieces (int)
         (?P<weight_kg>\d+(?:\.\d+)?\s*kg)\s+         # Weight (d.dd kg)
         (?P<reference>[A-Za-z\-]+)?\s*               # Blank (?)
-        (?P<taxable>\d+\.\d{2})\s+                   # Price (d.dd)
+        (?P<taxable>\d+\.\d{2})\s+                   # Price (dd.dd)
         (?P<non_taxable>\d+\.\d{2})\s+               # Price (d.dd)
         (?P<total>\d+\.\d{2})$                       # taxable + non_taxable (d.dd)
     """,
@@ -65,28 +65,45 @@ def transform(invoice_df):
 
     return df
 
+def load(df, filename):
+    pass
+
 def calculate_cost_despatch(df):
-    total_costs = df["gross_total"].sum()
+    total_costs = df["total"].sum()
     total_shipments = df["pieces"].sum()
 
     cost_per_despatch = round(total_costs / total_shipments, 2)
+    fixed_cost = 3.10
 
-    return cost_per_despatch
+    return (cost_per_despatch, total_shipments, fixed_cost)
 
 def identify_anomalies(df):
 
     threshold = 2.99
     anomalies = df[df["cost_per_piece"] > threshold]
 
-    anomalies = anomalies[["shipment", "ship_date"]]
-
     return anomalies
 
 
-df = extract("../inputs/FedEX 1.pdf")
-df = transform(df)
+def generate_summary(df):
+    cost_per_despatch, total_shipments, fixed_cost = calculate_cost_despatch(df)
 
-print(calculate_cost_despatch(df))
-print(identify_anomalies(df))
+    anomalous_orders = identify_anomalies(df)
 
-df.to_csv("../outputs/fedex/invoice.csv", index=False)
+    # Date: 5 days plus last entry.
+
+    str_description = "UNDER"
+
+    if fixed_cost < cost_per_despatch:
+        str_description = "OVER"
+
+    summary_string = f"""FedEx Retail Despatch
+
+Actual cost is {str_description} the fixed rate.
+
+Fixed rate: £{fixed_cost:.2f}
+Actual cost: £{cost_per_despatch:.2f}
+
+{len(anomalous_orders)} anomalous order(s) found. 
+"""
+    return summary_string
