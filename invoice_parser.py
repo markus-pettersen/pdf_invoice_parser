@@ -8,6 +8,10 @@ from tkinter import filedialog, messagebox, scrolledtext
 df_memory = None
 invoice_type = None
 
+# Create folder structure
+if not os.path.exists("outputs/"):
+    os.mkdir("outputs/")
+
 # Create logs
 if not os.path.isfile("outputs/evri_log.csv"):
     with open("outputs/evri_log.csv", mode="w", newline="") as file:

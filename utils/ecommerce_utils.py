@@ -1,6 +1,7 @@
 import pdfplumber
 import re
 import pandas as pd
+import os
 
 # ETL process
 def extract(input_path):
@@ -73,16 +74,17 @@ def transform(invoice_df):
 
 
 def load(df):
-    # to do: check for folder or file before saving
+    folder_path = "outputs/evri/"
+    if not os.path.exists(folder_path):
+        os.mkdir(folder_path)
     file_name = "evri_week_" + str(df["week"].iloc[0])
     df.to_csv(f"outputs/evri/{file_name}.csv", index=False)
-    # return file_name
 
 
 def calculate_costs(df):
     week_no = df["week"].iloc[0]
     despatch_df = df[df["category"] == "Despatch"]
-    total_costs = despatch_df["total_cost"].sum()
+    total_costs = despatch_df["net_cost"].sum()
     total_orders = despatch_df["quantity"].sum()
     cost_per_despatch = round(total_costs / total_orders, 2)
     fixed_cost = 2.44 # Hard coded fixed cost 
