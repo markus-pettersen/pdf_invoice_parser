@@ -1,7 +1,9 @@
 import pdfplumber
 import re
 import pandas as pd
+import csv
 import os
+
 
 # ETL process
 def extract(input_path):
@@ -72,6 +74,7 @@ def transform(invoice_df):
     # drop rows with zero charges (metadata rows)
     df_zero = df[df["net_cost"] == 0]
     df = df.drop(df_zero.index, axis=0)
+
     return df
 
 
@@ -83,6 +86,7 @@ def load(df):
     df.to_csv(f"outputs/evri/{file_name}.csv", index=False)
 
 
+# Reporting functions
 def calculate_costs(df):
     week_no = df["week"].iloc[0]
     despatch_df = df[df["category"] == "Despatch"]
@@ -90,7 +94,7 @@ def calculate_costs(df):
     total_costs = despatch_df["net_cost"].sum()
     total_orders = despatch_df["quantity"].sum()
     cost_per_despatch = round(total_costs / total_orders, 2)
-    fixed_cost = 2.44 # Hard coded fixed cost 
+    fixed_cost = 2.44  # Hard coded fixed cost
     return (int(week_no), float(cost_per_despatch), fixed_cost, int(total_orders))
 
 
@@ -113,9 +117,36 @@ Total despatches: {total_orders:,}
 """
     return summary_string
 
+def log_summary(df, log):
+    week, actual, fixed, total_orders = calculate_costs(df)
+    difference = round(actual - fixed, 2)
 
-# Helper functions
+    summary_row = [
+        str(week),
+        str(actual),
+        str(fixed),
+        str(difference),
+        str(total_orders)
+        ]
 
+    # check if row already exists
+    existing_rows = set()
+
+    with open(log, mode="r", newline="") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            existing_rows.add(tuple(row))
+
+    if tuple(summary_row) in existing_rows:
+        return True
+    else:
+        with open(log, mode="a", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(summary_row)
+        return False
+
+
+# Transforming helper functions
 def calculate_tax(code, cost):
     vat_codes = {"S": 0.2, "O": 0, "X": 0, "W": 0, "Z": 0}
     tax_rate = vat_codes.get(code)

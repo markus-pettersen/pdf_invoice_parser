@@ -19,11 +19,10 @@ def extract(input_path):
             for line in cropped.extract_text().splitlines():
                 rows.append(line)
 
-
     pattern = re.compile(
         r"""^(?P<shipment>\d{12})\s+                 # Shipment (12 digits)
         (?P<ship_date>\d{2}\/\d{2}\/\d{4})\s+        # Ship Date (dd/mm/yyyy)
-        (?P<service>[A-Za-z ]+)\s+                   # Service (Fedex Priority..)
+        (?P<service>[A-Za-z ]+)\s+                   # Service (Fedex Priority)
         (?P<pieces>\d+)\s+                           # Pieces (int)
         (?P<weight_kg>\d+(?:\.\d+)?\s*kg)\s+         # Weight (d.dd kg)
         (?P<reference>[A-Za-z\-]+)?\s*               # Blank (?)
@@ -36,7 +35,6 @@ def extract(input_path):
     rows = [row.replace("Cop", "") for row in rows]
     rows = [re.sub(r"(?<=\d)y", "", row) for row in rows]
 
-
     for line in rows:
         m = pattern.match(line)
         if m:
@@ -46,12 +44,13 @@ def extract(input_path):
 
     return invoice_df
 
+
 def transform(invoice_df):
     df = invoice_df.copy(deep=True)
 
     # Clean
     df["weight_kg"] = df["weight_kg"].str.replace(" kg", "")
-    
+
     # Cast as correct types
     df["weight_kg"] = df["weight_kg"].astype("float")
     df["pieces"] = df["pieces"].astype("int")
@@ -65,8 +64,12 @@ def transform(invoice_df):
 
     return df
 
+
 def load(df, filename):
-    pass
+    copy_name = filename.strip(".pdf")
+    folder_path = "outputs/fedex/"
+    df.to_csv(f"{folder_path}{copy_name}.csv", index=False)
+
 
 def calculate_cost_despatch(df):
     total_costs = df["total"].sum()
@@ -76,6 +79,7 @@ def calculate_cost_despatch(df):
     fixed_cost = 3.10
 
     return (cost_per_despatch, total_shipments, fixed_cost)
+
 
 def identify_anomalies(df):
 
@@ -104,6 +108,6 @@ Actual cost is {str_description} the fixed rate.
 Fixed rate: £{fixed_cost:.2f}
 Actual cost: £{cost_per_despatch:.2f}
 
-{len(anomalous_orders)} anomalous order(s) found. 
+{len(anomalous_orders)} anomalous order(s) found.
 """
     return summary_string
