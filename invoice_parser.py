@@ -24,8 +24,21 @@ if not os.path.isfile("outputs/evri_log.csv"):
                 "actual_cost",
                 "fixed_rate",
                 "difference",
-                "total_despatches"])
+                "total_despatches"
+                ])
 
+if not os.path.isfile("outputs/fedex_log.csv"):
+    with open("outputs/fedex_log.csv", mode="w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow([
+            "file_name",
+            "actual_cost",
+            "fixed_rate",
+            "difference",
+            "total pieces",
+            "total_weight_kg",
+            "cost_anamolies"
+            ])
 
 # Interface functions
 def load_invoice():
@@ -139,7 +152,7 @@ def summarize_invoice_button():
 # GUI structure
 root = tk.Tk()
 root.title("PDF Invoice Parser")
-root.geometry("450x450")
+root.geometry("500x500")
 
 label = tk.Label(root, text="Select Invoice")
 label.pack(pady=10)
@@ -176,6 +189,6 @@ summarize_invoice_button = tk.Button(
 status_label = tk.Label(root, text="")
 status_label.pack(pady=5)
 
-summary_output = scrolledtext.ScrolledText(root, width=50, height=10)
+summary_output = scrolledtext.ScrolledText(root, width=55, height=15)
 
 root.mainloop()

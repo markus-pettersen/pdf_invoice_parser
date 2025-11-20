@@ -1,5 +1,6 @@
 import pdfplumber
 import re
+import os
 import pandas as pd
 
 
@@ -68,17 +69,20 @@ def transform(invoice_df):
 def load(df, filename):
     copy_name = filename.strip(".pdf")
     folder_path = "outputs/fedex/"
+    if not os.path.exists(folder_path):
+        os.mkdir(folder_path)
     df.to_csv(f"{folder_path}{copy_name}.csv", index=False)
 
 
 def calculate_cost_despatch(df):
     total_costs = df["total"].sum()
-    total_shipments = df["pieces"].sum()
+    total_pieces = df["pieces"].sum()
+    total_weight = df["weight_kg"].sum()
 
-    cost_per_despatch = round(total_costs / total_shipments, 2)
+    cost_per_despatch = round(total_costs / total_pieces, 2)
     fixed_cost = 3.10
 
-    return (cost_per_despatch, total_shipments, fixed_cost)
+    return (cost_per_despatch, total_pieces, total_weight, fixed_cost)
 
 
 def identify_anomalies(df):
@@ -90,7 +94,7 @@ def identify_anomalies(df):
 
 
 def generate_summary(df):
-    cost_per_despatch, total_shipments, fixed_cost = calculate_cost_despatch(df)
+    actual, total_pieces, total_weight, fixed = calculate_cost_despatch(df)
 
     anomalous_orders = identify_anomalies(df)
 
@@ -98,16 +102,24 @@ def generate_summary(df):
 
     str_description = "UNDER"
 
-    if fixed_cost < cost_per_despatch:
+    if fixed < actual:
         str_description = "OVER"
 
     summary_string = f"""FedEx Retail Despatch
 
 Actual cost is {str_description} the fixed rate.
 
-Fixed rate: £{fixed_cost:.2f}
-Actual cost: £{cost_per_despatch:.2f}
+Fixed rate: £{fixed:.2f}
+Actual cost: £{actual:.2f}
+Difference: £{actual - fixed:+.2f} ({100*(actual/fixed - 1):+.2f}%)
+
+{total_weight}kg shipped over {total_pieces} pieces ({total_weight/total_pieces:.2f}kg/order).
 
 {len(anomalous_orders)} anomalous order(s) found.
 """
     return summary_string
+
+
+def log_summary(df, log):
+    print("teehee")
+
