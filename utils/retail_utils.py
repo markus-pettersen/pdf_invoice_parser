@@ -93,12 +93,10 @@ def identify_anomalies(df):
     return anomalies
 
 
-def generate_summary(df):
+def generate_summary(df, filename):
     actual, total_pieces, total_weight, fixed = calculate_cost_despatch(df)
 
     anomalous_orders = identify_anomalies(df)
-
-    # Date: 5 days plus last entry.
 
     str_description = "UNDER"
 
@@ -106,17 +104,25 @@ def generate_summary(df):
         str_description = "OVER"
 
     summary_string = f"""FedEx Retail Despatch
+File: {filename}
 
 Actual cost is {str_description} the fixed rate.
 
-Fixed rate: £{fixed:.2f}
-Actual cost: £{actual:.2f}
-Difference: £{actual - fixed:+.2f} ({100*(actual/fixed - 1):+.2f}%)
+Fixed rate:\t\t\t£{fixed:.2f}
+Actual cost:\t\t\t£{actual:.2f}
+Difference:\t\t\t£{actual - fixed:+.2f} ({100*(actual/fixed - 1):+.2f}%)
 
-{total_weight}kg shipped over {total_pieces} pieces ({total_weight/total_pieces:.2f}kg/order).
+Total weight:\t\t\t{total_weight}kg
+Total pieces:\t\t\t{total_pieces}
+Weight per piece:\t\t\t{total_weight/total_pieces:.2f}kg/piece
 
 {len(anomalous_orders)} anomalous order(s) found.
 """
+
+    if len(anomalous_orders) > 0:
+        str_df = anomalous_orders[["shipment", "ship_date", "cost_per_piece"]].to_string(index=False)
+        summary_string += f"""\n{str_df}"""
+
     return summary_string
 
 

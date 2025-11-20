@@ -123,7 +123,6 @@ def export_invoice():
 
 
 def log_summary():
-    # abstract into util files
     if df_memory is None:
         return
     if invoice_type == "evri":
@@ -141,7 +140,7 @@ def summarize_invoice_button():
         summary_string = ecom.generate_summary(df_memory)
 
     elif invoice_type == "fedex":
-        summary_string = retail.generate_summary(df_memory)
+        summary_string = retail.generate_summary(df_memory, file_name)
     else:
         return
 
@@ -152,7 +151,7 @@ def summarize_invoice_button():
 # GUI structure
 root = tk.Tk()
 root.title("PDF Invoice Parser")
-root.geometry("500x500")
+root.geometry("500x550")
 
 label = tk.Label(root, text="Select Invoice")
 label.pack(pady=10)
@@ -189,6 +188,6 @@ summarize_invoice_button = tk.Button(
 status_label = tk.Label(root, text="")
 status_label.pack(pady=5)
 
-summary_output = scrolledtext.ScrolledText(root, width=55, height=15)
+summary_output = scrolledtext.ScrolledText(root, width=55, height=20)
 
 root.mainloop()

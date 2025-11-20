@@ -110,10 +110,10 @@ Week: {str(week)}
 
 The actual cost is {str_description} the fixed rate.
 
-Fixed rate: £{fixed} per despatch
-Actual cost: £{actual} per despatch
-Difference: £{actual - fixed:+.2f} ({100*(actual/fixed - 1):+.2f}%)
-Total despatches: {total_orders:,}
+Fixed rate:\t\t\t£{fixed} per despatch
+Actual cost:\t\t\t£{actual} per despatch
+Difference:\t\t\t£{actual - fixed:+.2f} ({100*(actual/fixed - 1):+.2f}%)
+Total despatches:\t\t\t{total_orders:,}
 """
     return summary_string
 
